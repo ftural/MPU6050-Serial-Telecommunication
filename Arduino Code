@@ -1,0 +1,64 @@
+#include<Wire.h>
+/* 
+For using I2C properties
+ */
+ 
+const int MPU=0x68;  /*This register is used to reset the analog and digital signal paths of the gyroscope, accelerometer,
+and temperature sensors.
+The reset will revert the signal path analog to digital converters and filters to their power up
+configurations.
+Note: This register does not clear the sensor registers. The reset initializes the serial interface as
+well.
+So,it is communication address of MPU-6050.  
+*/
+
+int16_t AcceX,AcceY,AcceZ,Tempr,GyroX,GyroY,GyroZ;
+/* the variables of taking IMU */
+
+void setup(){
+  Wire.begin();
+  Wire.beginTransmission(MPU);
+  Wire.write(0x6B);/*This register allows the user to configure the power mode and clock source*/
+  Wire.write(0); /* Starting the MPU */
+  Wire.endTransmission(true);
+  /* Starting the serial communication*/
+  Serial.begin(9600);
+}
+void loop(){
+  readvalue();
+  /*It is writing the reading value to the serial port*/
+
+  Serial.print("accelerationX = "); Serial.print(AcceX);
+  Serial.print(" | accelerationY = "); Serial.print(AcceY);
+  Serial.print(" | accelerationZ = "); Serial.print(AcceZ);
+  Serial.print(" | Temperature = "); Serial.print(Tempr/340.00+36.53);  
+  /* the formula of temperature from taking datasheet */
+  Serial.print(" | gyroscopeX = "); Serial.print(GyroX);
+  Serial.print(" | gyroscopeY = "); Serial.print(GyroY);
+  Serial.print(" | gyroscopeZ = "); Serial.println(GyroZ);
+  delay(500);
+}
+
+void readvalue(){
+  Wire.beginTransmission(MPU);
+
+  Wire.write(0x3B); 
+  /* Pulling the value from 0x3B register.We should start the this address for reading the all values.*/
+  Wire.endTransmission(false);
+  Wire.requestFrom(MPU,14,true);
+  /* request a total of 14 registers */
+  
+  AcceX=Wire.read()<<8|Wire.read();  // 0x3B (ACCEL_XOUT_H) & 0x3C (ACCEL_XOUT_L)
+  AcceY=Wire.read()<<8|Wire.read();  // 0x3D (ACCEL_YOUT_H) & 0x3E (ACCEL_YOUT_L)
+  AcceZ=Wire.read()<<8|Wire.read();  // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
+  Tempr=Wire.read()<<8|Wire.read();  // 0x41 (TEMP_OUT_H)   & 0x42 (TEMP_OUT_L)
+  GyroX=Wire.read()<<8|Wire.read();  // 0x43 (GYRO_XOUT_H) & 0x44 (GYRO_XOUT_L)
+  GyroY=Wire.read()<<8|Wire.read();  // 0x45 (GYRO_YOUT_H) & 0x46 (GYRO_YOUT_L)
+  GyroZ=Wire.read()<<8|Wire.read(); // 0x47 (GYRO_ZOUT_H) & 0x48 (GYRO_ZOUT_L)
+  /* 
+  * Sırası ile okunan her iki byte birleştirilerek sırası ile değişkenlere yazdırıldı
+  * Böylece IMU'dan tüm değerler okunmuş oldu
+  * 0X3B adresi imu değerlerinden ilk sensörün değerine denk gelmektedir.
+  * IMU'dan tüm değerlerin okunabilmesi için bu adresten başlandı
+  */
+}
